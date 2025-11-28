@@ -2,15 +2,16 @@
 # Tetris Clone with OOP Structure (Piece, Board), Ghost Piece, Efficient Line Clearing
 # Dependencies: pygame (pip install pygame)
 
-import sys
 import random
+import sys
+
 import pygame
 
 # ------------- CONFIG -------------
 SCREEN_WIDTH = 600
 SCREEN_HEIGHT = 720
-PLAY_WIDTH = 300             # 10 blocks wide
-PLAY_HEIGHT = 600            # 20 blocks tall
+PLAY_WIDTH = 300  # 10 blocks wide
+PLAY_HEIGHT = 600  # 20 blocks tall
 BLOCK_SIZE = PLAY_WIDTH // 10
 
 GRID_COLS = 10
@@ -19,8 +20,8 @@ GRID_ROWS = 20
 TOP_MARGIN = 60
 SIDE_MARGIN = (SCREEN_WIDTH - PLAY_WIDTH) // 2
 
-DROP_START_SPEED = 0.8       # seconds per tile drop at level 1
-SPEEDUP_PER_LEVEL = 0.07     # decrease seconds per level
+DROP_START_SPEED = 0.8  # seconds per tile drop at level 1
+SPEEDUP_PER_LEVEL = 0.07  # decrease seconds per level
 LINES_PER_LEVEL = 10
 
 BG_COLOR = (16, 18, 24)
@@ -33,217 +34,219 @@ OUTLINE_COLOR = (255, 255, 255)
 # Tetromino rotation states (0..3): each as 4x4 matrix
 # 1 values indicate filled; 0 empty
 TETROMINOES = {
-    'I': {
-        'color': (80, 200, 255),
-        'rotations': [
+    "I": {
+        "color": (80, 200, 255),
+        "rotations": [
             [
-                [0,0,0,0],
-                [1,1,1,1],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,1,0],
-                [0,0,1,0],
-                [0,0,1,0],
-                [0,0,1,0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 1, 0],
             ],
             [
-                [0,0,0,0],
-                [0,0,0,0],
-                [1,1,1,1],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [0,1,0,0],
-                [0,1,0,0],
-                [0,1,0,0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
             ],
-        ]
+        ],
     },
-    'O': {
-        'color': (255, 220, 80),
-        'rotations': [
+    "O": {
+        "color": (255, 220, 80),
+        "rotations": [
             [
-                [0,1,1,0],
-                [0,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,1,0],
-                [0,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,1,0],
-                [0,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,1,0],
-                [0,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
-    'T': {
-        'color': (196, 112, 245),
-        'rotations': [
+    "T": {
+        "color": (196, 112, 245),
+        "rotations": [
             [
-                [0,1,0,0],
-                [1,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [0,1,1,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,0,0],
-                [1,1,1,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [1,1,0,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
-    'S': {
-        'color': (120, 230, 100),
-        'rotations': [
+    "S": {
+        "color": (120, 230, 100),
+        "rotations": [
             [
-                [0,1,1,0],
-                [1,1,0,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [0,1,1,0],
-                [0,0,1,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,0,0],
-                [0,1,1,0],
-                [1,1,0,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [0, 1, 1, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [1,0,0,0],
-                [1,1,0,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [1, 0, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
-    'Z': {
-        'color': (240, 90, 90),
-        'rotations': [
+    "Z": {
+        "color": (240, 90, 90),
+        "rotations": [
             [
-                [1,1,0,0],
-                [0,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,1,0],
-                [0,1,1,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [0, 0, 1, 0],
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,0,0],
-                [1,1,0,0],
-                [0,1,1,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [1, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [1,1,0,0],
-                [1,0,0,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [1, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
-    'J': {
-        'color': (100, 140, 255),
-        'rotations': [
+    "J": {
+        "color": (100, 140, 255),
+        "rotations": [
             [
-                [1,0,0,0],
-                [1,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [1, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,1,0],
-                [0,1,0,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [0, 1, 1, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,0,0],
-                [1,1,1,0],
-                [0,0,1,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [0,1,0,0],
-                [1,1,0,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [1, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
-    'L': {
-        'color': (255, 170, 70),
-        'rotations': [
+    "L": {
+        "color": (255, 170, 70),
+        "rotations": [
             [
-                [0,0,1,0],
-                [1,1,1,0],
-                [0,0,0,0],
-                [0,0,0,0],
+                [0, 0, 1, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,1,0,0],
-                [0,1,0,0],
-                [0,1,1,0],
-                [0,0,0,0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 1, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [0,0,0,0],
-                [1,1,1,0],
-                [1,0,0,0],
-                [0,0,0,0],
+                [0, 0, 0, 0],
+                [1, 1, 1, 0],
+                [1, 0, 0, 0],
+                [0, 0, 0, 0],
             ],
             [
-                [1,1,0,0],
-                [0,1,0,0],
-                [0,1,0,0],
-                [0,0,0,0],
+                [1, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, 0],
             ],
-        ]
+        ],
     },
 }
 
 PIECE_TYPES = list(TETROMINOES.keys())
 
+
 # ------------- UTILS -------------
 def rotate_matrix_cw(matrix):
     # rotate 4x4 clockwise
     return [list(reversed(col)) for col in zip(*matrix)]
+
 
 def matrix_cells(matrix):
     for r in range(4):
@@ -251,14 +254,16 @@ def matrix_cells(matrix):
             if matrix[r][c]:
                 yield r, c
 
+
 # ------------- CLASSES -------------
+
 
 class Piece:
     def __init__(self, kind):
         self.kind = kind
         self.rot_index = 0
-        self.rotations = TETROMINOES[kind]['rotations']
-        self.color = TETROMINOES[kind]['color']
+        self.rotations = TETROMINOES[kind]["rotations"]
+        self.color = TETROMINOES[kind]["color"]
         # Spawn near top center: x is grid column, y is grid row
         # Position refers to top-left of 4x4 bounding box
         self.x = GRID_COLS // 2 - 2
@@ -269,9 +274,12 @@ class Piece:
 
     def get_cells(self, x=None, y=None, rot_index=None):
         """Return absolute grid positions occupied by this piece."""
-        if x is None: x = self.x
-        if y is None: y = self.y
-        if rot_index is None: rot_index = self.rot_index
+        if x is None:
+            x = self.x
+        if y is None:
+            y = self.y
+        if rot_index is None:
+            rot_index = self.rot_index
         mat = self.rotations[rot_index % 4]
         for r, c in matrix_cells(mat):
             yield (y + r, x + c)
@@ -282,7 +290,7 @@ class Piece:
 
     def rotated_with_kicks(self, board, dir=1):
         """Try rotate with simple wall kicks: offsets in x direction."""
-        if self.kind == 'O':
+        if self.kind == "O":
             # O rotation doesn't change shape; still try for collision correction if needed
             new_rot = self.rot_index
         else:
@@ -356,7 +364,9 @@ class Board:
 
     def hard_drop_distance(self, piece: Piece):
         dist = 0
-        while not self.collides(piece, x=piece.x, y=piece.y + dist + 1, rot_index=piece.rot_index):
+        while not self.collides(
+            piece, x=piece.x, y=piece.y + dist + 1, rot_index=piece.rot_index
+        ):
             dist += 1
         return dist
 
@@ -371,14 +381,17 @@ class Board:
                 rect = pygame.Rect(
                     SIDE_MARGIN + c * BLOCK_SIZE,
                     TOP_MARGIN + r * BLOCK_SIZE,
-                    BLOCK_SIZE, BLOCK_SIZE
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
                 )
                 # grid lines
                 pygame.draw.rect(surface, GRID_COLOR, rect, width=1)
                 # filled blocks
                 color = self.grid[r][c]
                 if color:
-                    pygame.draw.rect(surface, color, rect.inflate(-2, -2), border_radius=5)
+                    pygame.draw.rect(
+                        surface, color, rect.inflate(-2, -2), border_radius=5
+                    )
 
         # Draw ghost piece
         if current_piece and not self.game_over:
@@ -389,12 +402,21 @@ class Board:
                 rect = pygame.Rect(
                     SIDE_MARGIN + rx * BLOCK_SIZE,
                     TOP_MARGIN + ry * BLOCK_SIZE,
-                    BLOCK_SIZE, BLOCK_SIZE
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
                 )
-                ghost_surface = pygame.Surface((BLOCK_SIZE-2, BLOCK_SIZE-2), pygame.SRCALPHA)
+                ghost_surface = pygame.Surface(
+                    (BLOCK_SIZE - 2, BLOCK_SIZE - 2), pygame.SRCALPHA
+                )
                 ghost_surface.fill((GHOST_COLOR[0], GHOST_COLOR[1], GHOST_COLOR[2], 55))
-                surface.blit(ghost_surface, rect.move(1,1))
-                pygame.draw.rect(surface, (255,255,255,90), rect.inflate(-2, -2), width=2, border_radius=5)
+                surface.blit(ghost_surface, rect.move(1, 1))
+                pygame.draw.rect(
+                    surface,
+                    (255, 255, 255, 90),
+                    rect.inflate(-2, -2),
+                    width=2,
+                    border_radius=5,
+                )
 
         # Draw current falling piece
         if current_piece and not self.game_over:
@@ -404,11 +426,20 @@ class Board:
                 rect = pygame.Rect(
                     SIDE_MARGIN + rx * BLOCK_SIZE,
                     TOP_MARGIN + ry * BLOCK_SIZE,
-                    BLOCK_SIZE, BLOCK_SIZE
+                    BLOCK_SIZE,
+                    BLOCK_SIZE,
                 )
-                pygame.draw.rect(surface, current_piece.color, rect.inflate(-2, -2), border_radius=5)
+                pygame.draw.rect(
+                    surface, current_piece.color, rect.inflate(-2, -2), border_radius=5
+                )
                 # outline
-                pygame.draw.rect(surface, OUTLINE_COLOR, rect.inflate(-2, -2), width=1, border_radius=5)
+                pygame.draw.rect(
+                    surface,
+                    OUTLINE_COLOR,
+                    rect.inflate(-2, -2),
+                    width=1,
+                    border_radius=5,
+                )
 
         # Sidebar UI
         self.draw_sidebar(surface, font, next_piece)
@@ -453,20 +484,28 @@ class Board:
         start_x = top_left[0] + (BLOCK_SIZE * 4 - width) // 2
         start_y = top_left[1] + (BLOCK_SIZE * 4 - height) // 2
 
-        preview_rect = pygame.Rect(top_left[0], top_left[1], BLOCK_SIZE * 4, BLOCK_SIZE * 4)
+        preview_rect = pygame.Rect(
+            top_left[0], top_left[1], BLOCK_SIZE * 4, BLOCK_SIZE * 4
+        )
         pygame.draw.rect(surface, (25, 28, 38), preview_rect, border_radius=8)
         for r, c in cells:
             px = start_x + (c - min_c) * BLOCK_SIZE
             py = start_y + (r - min_r) * BLOCK_SIZE
             rect = pygame.Rect(px, py, BLOCK_SIZE, BLOCK_SIZE)
-            pygame.draw.rect(surface, piece.color, rect.inflate(-2, -2), border_radius=5)
-            pygame.draw.rect(surface, OUTLINE_COLOR, rect.inflate(-2, -2), width=1, border_radius=5)
+            pygame.draw.rect(
+                surface, piece.color, rect.inflate(-2, -2), border_radius=5
+            )
+            pygame.draw.rect(
+                surface, OUTLINE_COLOR, rect.inflate(-2, -2), width=1, border_radius=5
+            )
 
 
 # ------------- GAME CONTROL -------------
 
+
 class BagGenerator:
     """7-bag randomizer for fair tetromino distribution."""
+
     def __init__(self):
         self.bag = []
 
@@ -475,6 +514,7 @@ class BagGenerator:
             self.bag = PIECE_TYPES[:]
             random.shuffle(self.bag)
         return self.bag.pop()
+
 
 class Game:
     def __init__(self):
@@ -512,7 +552,12 @@ class Game:
         self.current = self.next_piece
         self.next_piece = Piece(self.rng.next())
         # If spawn collides -> game over
-        if self.board.collides(self.current, x=self.current.x, y=self.current.y, rot_index=self.current.rot_index):
+        if self.board.collides(
+            self.current,
+            x=self.current.x,
+            y=self.current.y,
+            rot_index=self.current.rot_index,
+        ):
             self.board.game_over = True
 
     def soft_drop_speed(self):
@@ -535,18 +580,32 @@ class Game:
         if dir_now != 0:
             if self.move_dir != dir_now:
                 # direction changed or started fresh -> move once and reset timer
-                if not self.board.collides(self.current, x=self.current.x + dir_now, y=self.current.y, rot_index=self.current.rot_index):
+                if not self.board.collides(
+                    self.current,
+                    x=self.current.x + dir_now,
+                    y=self.current.y,
+                    rot_index=self.current.rot_index,
+                ):
                     self.current.move(dir_now, 0)
                 self.move_dir = dir_now
                 self.move_hold_time = 0.0
             else:
                 # hold
                 self.move_hold_time += dt
-                threshold = self.move_initial_delay if self.move_hold_time < self.move_initial_delay else self.move_repeat_delay
+                threshold = (
+                    self.move_initial_delay
+                    if self.move_hold_time < self.move_initial_delay
+                    else self.move_repeat_delay
+                )
                 # step multiple times if dt large
                 while self.move_hold_time >= threshold:
                     self.move_hold_time -= threshold
-                    if not self.board.collides(self.current, x=self.current.x + dir_now, y=self.current.y, rot_index=self.current.rot_index):
+                    if not self.board.collides(
+                        self.current,
+                        x=self.current.x + dir_now,
+                        y=self.current.y,
+                        rot_index=self.current.rot_index,
+                    ):
                         self.current.move(dir_now, 0)
                     threshold = self.move_repeat_delay
         else:
@@ -595,7 +654,12 @@ class Game:
         interval = self.soft_drop_speed() if self.fast_drop else self.gravity_speed()
         while self.drop_timer >= interval:
             self.drop_timer -= interval
-            if not self.board.collides(self.current, x=self.current.x, y=self.current.y + 1, rot_index=self.current.rot_index):
+            if not self.board.collides(
+                self.current,
+                x=self.current.x,
+                y=self.current.y + 1,
+                rot_index=self.current.rot_index,
+            ):
                 self.current.move(0, 1)
             else:
                 # lock
@@ -615,18 +679,28 @@ class Game:
     def draw_game_over(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 160))
-        self.screen.blit(overlay, (0,0))
+        self.screen.blit(overlay, (0, 0))
 
         big_font = pygame.font.SysFont("consolas", 42, bold=True)
         small_font = pygame.font.SysFont("consolas", 24)
 
         text1 = big_font.render("GAME OVER", True, (255, 110, 110))
         text2 = small_font.render("Press Enter or Space to Restart", True, TEXT_COLOR)
-        text3 = small_font.render(f"Score: {self.board.score}   Lines: {self.board.lines_cleared}   Level: {self.board.level}", True, TEXT_COLOR)
+        text3 = small_font.render(
+            f"Score: {self.board.score}   Lines: {self.board.lines_cleared}   Level: {self.board.level}",
+            True,
+            TEXT_COLOR,
+        )
 
-        self.screen.blit(text1, (SCREEN_WIDTH//2 - text1.get_width()//2, SCREEN_HEIGHT//2 - 90))
-        self.screen.blit(text3, (SCREEN_WIDTH//2 - text3.get_width()//2, SCREEN_HEIGHT//2 - 40))
-        self.screen.blit(text2, (SCREEN_WIDTH//2 - text2.get_width()//2, SCREEN_HEIGHT//2 + 5))
+        self.screen.blit(
+            text1, (SCREEN_WIDTH // 2 - text1.get_width() // 2, SCREEN_HEIGHT // 2 - 90)
+        )
+        self.screen.blit(
+            text3, (SCREEN_WIDTH // 2 - text3.get_width() // 2, SCREEN_HEIGHT // 2 - 40)
+        )
+        self.screen.blit(
+            text2, (SCREEN_WIDTH // 2 - text2.get_width() // 2, SCREEN_HEIGHT // 2 + 5)
+        )
 
     def run(self):
         while True:
